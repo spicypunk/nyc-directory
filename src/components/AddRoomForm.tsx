@@ -12,26 +12,56 @@ const PRICE_RANGES = [
   "$3000+",
 ];
 
-export function AddRoomForm() {
+export type RoomFormValues = {
+  title: string;
+  description: string;
+  photoUrl: string;
+  neighborhood: string;
+  priceRange: string;
+  roommateCount: number;
+  externalLink: string | null;
+};
+
+export function AddRoomForm({
+  roomId,
+  initialValues,
+}: {
+  roomId?: string;
+  initialValues?: RoomFormValues;
+}) {
   const router = useRouter();
+  const isEditing = !!roomId;
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
-  const [priceRange, setPriceRange] = useState("");
-  const [roommateCount, setRoommateCount] = useState("");
-  const [externalLink, setExternalLink] = useState("");
+  const [title, setTitle] = useState(initialValues?.title ?? "");
+  const [description, setDescription] = useState(
+    initialValues?.description ?? "",
+  );
+  const [photoUrl, setPhotoUrl] = useState(initialValues?.photoUrl ?? "");
+  const [neighborhood, setNeighborhood] = useState(
+    initialValues?.neighborhood ?? "",
+  );
+  const [priceRange, setPriceRange] = useState(
+    initialValues?.priceRange ?? "",
+  );
+  const [roommateCount, setRoommateCount] = useState(
+    initialValues?.roommateCount?.toString() ?? "",
+  );
+  const [externalLink, setExternalLink] = useState(
+    initialValues?.externalLink ?? "",
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrors({});
     setSubmitting(true);
 
-    const res = await fetch("/api/rooms", {
-      method: "POST",
+    const url = isEditing ? `/api/rooms/${roomId}` : "/api/rooms";
+    const method = isEditing ? "PUT" : "POST";
+
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title,
@@ -221,7 +251,13 @@ export function AddRoomForm() {
         disabled={submitting}
         className="w-full bg-[var(--color-green)] hover:bg-[var(--color-green-hover)] text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {submitting ? "Adding..." : "Add Room"}
+        {submitting
+          ? isEditing
+            ? "Saving..."
+            : "Adding..."
+          : isEditing
+            ? "Save Changes"
+            : "Add Room"}
       </button>
     </form>
   );

@@ -27,6 +27,7 @@ export async function GET() {
       roommateCount: rooms.roommateCount,
       isAvailable: rooms.isAvailable,
       externalLink: rooms.externalLink,
+      posterId: rooms.posterId,
       createdAt: rooms.createdAt,
       updatedAt: rooms.updatedAt,
       poster: {

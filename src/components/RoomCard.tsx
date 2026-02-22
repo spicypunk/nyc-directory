@@ -1,6 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import { ContactPopover } from "@/components/ContactPopover";
 import { RoomCardDescription } from "./RoomCardDescription";
+import { DeleteRoomButton } from "./DeleteRoomButton";
 
 export type RoomWithPoster = {
   id: string;
@@ -12,6 +14,7 @@ export type RoomWithPoster = {
   roommateCount: number;
   isAvailable: boolean;
   externalLink: string | null;
+  posterId: string;
   poster: {
     name: string;
     email: string | null;
@@ -20,7 +23,15 @@ export type RoomWithPoster = {
   };
 };
 
-export function RoomCard({ room }: { room: RoomWithPoster }) {
+export function RoomCard({
+  room,
+  currentUserId,
+}: {
+  room: RoomWithPoster;
+  currentUserId?: string;
+}) {
+  const isOwner = currentUserId === room.posterId;
+
   return (
     <div className="bg-[var(--color-card)] rounded-xl shadow-sm p-4 flex flex-col gap-3">
       {/* Top section: photo + info */}
@@ -102,6 +113,19 @@ export function RoomCard({ room }: { room: RoomWithPoster }) {
         <span>💰 {room.priceRange}</span>
         <span>👥 {room.roommateCount} roommate{room.roommateCount !== 1 ? "s" : ""}</span>
       </div>
+
+      {/* Owner controls */}
+      {isOwner && (
+        <div className="flex gap-2 border-t border-black/5 pt-2">
+          <Link
+            href={`/rooms/${room.id}/edit`}
+            className="text-xs font-medium text-black/50 hover:text-black/80 transition-colors"
+          >
+            Edit
+          </Link>
+          <DeleteRoomButton roomId={room.id} />
+        </div>
+      )}
     </div>
   );
 }

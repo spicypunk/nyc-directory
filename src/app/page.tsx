@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { rooms, users } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -32,6 +33,8 @@ function groupRoomsByRecency(rooms: (RoomWithPoster & { updatedAt: Date })[]) {
 }
 
 export default async function RoomsPage() {
+  const session = await auth();
+
   const results = await db
     .select({
       id: rooms.id,
@@ -44,6 +47,7 @@ export default async function RoomsPage() {
       isAvailable: rooms.isAvailable,
       externalLink: rooms.externalLink,
       updatedAt: rooms.updatedAt,
+      posterId: rooms.posterId,
       poster: {
         name: users.name,
         email: users.email,
@@ -81,7 +85,11 @@ export default async function RoomsPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {group.rooms.map((room) => (
-              <RoomCard key={room.id} room={room} />
+              <RoomCard
+                key={room.id}
+                room={room}
+                currentUserId={session?.user?.id}
+              />
             ))}
           </div>
         </section>
