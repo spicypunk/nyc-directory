@@ -1,1 +1,13 @@
 @import "tailwindcss";
+
+@theme {
+  --color-bg: #f5f0e1;
+  --color-card: #ffffff;
+  --color-green: #2d5a3d;
+  --color-green-hover: #1e3f2b;
+  --font-family-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-bg);
+}
