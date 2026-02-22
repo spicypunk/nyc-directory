@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { NEIGHBORHOODS } from "@/lib/neighborhoods";
 
@@ -39,6 +39,9 @@ export function AddRoomForm({
     initialValues?.description ?? "",
   );
   const [photoUrl, setPhotoUrl] = useState(initialValues?.photoUrl ?? "");
+  const [photoPreview, setPhotoPreview] = useState(initialValues?.photoUrl ?? "");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [neighborhood, setNeighborhood] = useState(
     initialValues?.neighborhood ?? "",
   );
@@ -51,6 +54,44 @@ export function AddRoomForm({
   const [externalLink, setExternalLink] = useState(
     initialValues?.externalLink ?? "",
   );
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show local preview immediately
+    setPhotoPreview(URL.createObjectURL(file));
+    setUploading(true);
+    setErrors((prev) => ({ ...prev, photoUrl: "" }));
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setErrors((prev) => ({
+          ...prev,
+          photoUrl: data.error || "Upload failed",
+        }));
+        setPhotoPreview("");
+        setUploading(false);
+        return;
+      }
+
+      const { url } = await res.json();
+      setPhotoUrl(url);
+    } catch {
+      setErrors((prev) => ({ ...prev, photoUrl: "Upload failed" }));
+      setPhotoPreview("");
+    }
+    setUploading(false);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -135,19 +176,38 @@ export function AddRoomForm({
         )}
       </div>
 
-      {/* Photo URL */}
+      {/* Photo Upload */}
       <div>
-        <label htmlFor="photoUrl" className={labelClass}>
-          Photo URL
-        </label>
+        <label className={labelClass}>Photo</label>
+        {photoPreview && (
+          <div className="mb-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photoPreview}
+              alt="Preview"
+              className="w-24 h-24 rounded-lg object-cover"
+            />
+          </div>
+        )}
         <input
-          id="photoUrl"
-          type="url"
-          placeholder="https://example.com/photo.jpg"
-          value={photoUrl}
-          onChange={(e) => setPhotoUrl(e.target.value)}
-          className={inputClass}
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          className="hidden"
         />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className={inputClass + " text-left text-black/50 cursor-pointer hover:border-black/30 disabled:opacity-50"}
+        >
+          {uploading
+            ? "Uploading..."
+            : photoUrl
+              ? "Change photo"
+              : "Choose a photo"}
+        </button>
         {errors.photoUrl && <p className={errorClass}>{errors.photoUrl}</p>}
       </div>
 
@@ -248,7 +308,7 @@ export function AddRoomForm({
       {/* Submit */}
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || uploading}
         className="w-full bg-[var(--color-green)] hover:bg-[var(--color-green-hover)] text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting
