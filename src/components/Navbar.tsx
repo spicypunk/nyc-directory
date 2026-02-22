@@ -39,7 +39,7 @@ export function Navbar() {
 
   return (
     <nav className="border-b border-black/10">
-      <div className="mx-auto max-w-3xl px-4">
+      <div className="mx-auto max-w-5xl px-4">
         {/* Top row */}
         <div className="flex items-center justify-between h-14">
           {/* X/Twitter icon */}
