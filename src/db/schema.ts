@@ -19,6 +19,7 @@ export const users = pgTable(
     profileImageUrl: text("profile_image_url").notNull(),
     referralCode: text("referral_code").unique().notNull(),
     referredBy: uuid("referred_by"),
+    hasOnboarded: boolean("has_onboarded").default(false).notNull(),
     joinedAt: timestamp("joined_at").defaultNow().notNull(),
   },
   (table) => [

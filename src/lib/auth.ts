@@ -14,6 +14,7 @@ declare module "next-auth" {
       twitterHandle: string;
       profileImageUrl: string;
       referralCode: string;
+      hasOnboarded: boolean;
     };
   }
 }
@@ -51,11 +52,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         .limit(1);
 
       if (existing) {
-        // Update profile data on each sign-in
+        // Update Twitter-sourced profile data on each sign-in
+        // (name is NOT overwritten — it's the user's chosen display name)
         await db
           .update(users)
           .set({
-            name,
             twitterHandle: twitterHandle || existing.twitterHandle,
             profileImageUrl: profileImageUrl || existing.profileImageUrl,
           })
@@ -90,6 +91,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // server-side (e.g. profile update on another device), the JWT on this
     // device stays stale until the user signs out and back in. This is the
     // expected trade-off of the JWT strategy (no DB lookup per request).
+    //
+    // Exception: hasOnboarded is re-checked from the DB while false, so the
+    // token updates immediately after the user completes onboarding.
     async jwt({ token, account }) {
       if (account) {
         const [user] = await db
@@ -103,6 +107,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.twitterHandle = user.twitterHandle;
           token.profileImageUrl = user.profileImageUrl;
           token.referralCode = user.referralCode;
+          token.hasOnboarded = user.hasOnboarded;
+        }
+      } else if (!token.hasOnboarded && token.userId) {
+        // Re-check DB until user completes onboarding, then stop querying
+        const [user] = await db
+          .select({ hasOnboarded: users.hasOnboarded, name: users.name })
+          .from(users)
+          .where(eq(users.id, token.userId as string))
+          .limit(1);
+
+        if (user) {
+          token.hasOnboarded = user.hasOnboarded;
+          if (user.hasOnboarded) {
+            token.name = user.name;
+          }
         }
       }
       return token;
@@ -116,6 +135,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         twitterHandle: token.twitterHandle as string,
         profileImageUrl: token.profileImageUrl as string,
         referralCode: token.referralCode as string,
+        hasOnboarded: token.hasOnboarded as boolean,
       };
       return session;
     },
