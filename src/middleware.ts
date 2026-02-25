@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-const PUBLIC_PATHS = ["/api/auth", "/invite"];
+const PUBLIC_PATHS = ["/api/auth", "/invite", "/onboarding", "/api/users/me"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
@@ -13,6 +13,14 @@ export default auth((req) => {
 
   // auth() attaches session as req.auth
   if (req.auth) {
+    // Redirect unboarded users to onboarding (unless already there)
+    const hasOnboarded = (req.auth as { user?: { hasOnboarded?: boolean } })
+      ?.user?.hasOnboarded;
+    if (!hasOnboarded && !pathname.startsWith("/onboarding")) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/onboarding";
+      return NextResponse.redirect(url);
+    }
     return NextResponse.next();
   }
 
